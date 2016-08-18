@@ -21,10 +21,18 @@ Start the client:
 
     {:ok, _pid} = Dockex.Client.start_link(config)
 
-Use the client's functions:
+And use it:
 
     {:ok, ""} = Dockex.Client.ping
 
     {:ok, [...]} = Dockex.Client.list_containers
 
-    ...
+    container = %Dockex.Container{
+      name: "foobar",
+      cmd: ["/bin/sh", "-c", "echo 'hi there'"],
+      image: "alpine:3.2"
+    }
+
+    {:ok, container} = Dockex.Client.create_and_start_container(container)
+
+    {:ok, output} = Dockex.Client.get_container_logs(container)
