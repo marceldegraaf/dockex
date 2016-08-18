@@ -58,9 +58,8 @@ defmodule Dockex.Client do
   @doc """
   Inspect a container. Accepts a `%Dockex.Container{}` struct or a container id.
   """
-  @spec inspect_container(struct | number) :: {:ok, map} | {:error, String.t}
-  def inspect_container(%Dockex.Container{id: id}), do: inspect_container(id)
-  def inspect_container(id) do
+  @spec inspect_container(struct) :: {:ok, map} | {:error, String.t}
+  def inspect_container(%Dockex.Container{id: id}) do
     case Dockex.API.get("/containers/#{id}/json") do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
@@ -70,21 +69,20 @@ defmodule Dockex.Client do
   @doc """
   Fetch the last 50 lines of container logs.
   """
-  @spec get_container_logs(struct | number) :: {:ok, String.t} | {:error, String.t}
-  def get_container_logs(%Dockex.Container{id: id}), do: get_container_logs(id)
-  def get_container_logs(id), do: get_container_logs(id, 50)
+  @spec get_container_logs(struct) :: {:ok, String.t} | {:error, String.t}
+  def get_container_logs(%Dockex.Container{} = container), do: get_container_logs(container, 50)
 
   @doc """
   Fetch the last `number` lines of container logs.
   """
-  @spec get_container_logs(struct | number, number) :: {:ok, String.t} | {:error, String.t}
-  def get_container_logs(%Dockex.Container{id: id}, number), do: get_container_logs(id, number)
-  def get_container_logs(id, number) do
+  @spec get_container_logs(struct, number) :: {:ok, String.t} | {:error, String.t}
+  def get_container_logs(%Dockex.Container{id: id}, number) do
     case Dockex.API.get("/containers/#{id}/logs", [], params: %{stdout: 1, tail: number}) do
       {:ok, %HTTPoison.Response{status_code: 200, body: ""}} -> {:ok, ""}
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         <<type, 0, 0, 0, _size :: integer-big-size(32), output :: binary>> = body
         {:ok, output}
+      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
     end
   end
@@ -127,6 +125,32 @@ defmodule Dockex.Client do
     case Dockex.API.post("/containers/#{id}/start", "", [], []) do
       {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
       {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
+      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Stop a running container.
+  """
+  @spec stop_container(struct) :: {:ok, struct} | {:error, String.t}
+  def stop_container(%Dockex.Container{id: id} = container) do
+    case Dockex.API.post("/containers/#{id}/stop", "", [], []) do
+      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
+      {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
+      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Delete a container.
+  """
+  @spec delete_container(struct) :: {:ok, String.t} | {:error, String.t}
+  def delete_container(%Dockex.Container{id: id}) do
+    case Dockex.API.delete("/containers/#{id}") do
+      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, ""}
+      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
     end
   end
