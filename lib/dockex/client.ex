@@ -23,6 +23,13 @@ defmodule Dockex.Client do
     end
   end
 
+  def info do
+    case Dockex.API.get("/info") do
+      {:ok, %HTTPoison.Response{status_code: 200, body: "OK"}} -> {:ok, ""}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+    end
+  end
+
   def list_containers do
     case Dockex.API.get("/containers/json") do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
