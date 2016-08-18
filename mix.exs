@@ -22,6 +22,8 @@ defmodule Dockex.Mixfile do
     [
       {:httpoison, "> 0.0.0"},
       {:poison, "> 0.0.0"},
+      {:earmark, "> 0.0.0", only: :dev},
+      {:ex_doc, "> 0.0.0", only: :dev},
     ]
   end
 end
