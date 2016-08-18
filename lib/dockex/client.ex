@@ -25,7 +25,7 @@ defmodule Dockex.Client do
 
   def info do
     case Dockex.API.get("/info") do
-      {:ok, %HTTPoison.Response{status_code: 200, body: "OK"}} -> {:ok, ""}
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
     end
   end
