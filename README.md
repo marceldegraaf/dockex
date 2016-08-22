@@ -19,20 +19,31 @@ configuration:
 
 Start the client:
 
-    {:ok, _pid} = Dockex.Client.start_link(config)
+    {:ok, pid} = Dockex.Client.start_link(config)
 
 And use it:
 
-    {:ok, ""} = Dockex.Client.ping
+    # Ping the Docker server
+    {:ok, ""} = Dockex.Client.ping(pid)
 
-    {:ok, [...]} = Dockex.Client.list_containers
+    # List all running containers
+    {:ok, [...]} = Dockex.Client.list_containers(pid)
 
+    # Initialize a container struct
     container = %Dockex.Container{
       name: "foobar",
       cmd: ["/bin/sh", "-c", "echo 'hi there'"],
       image: "alpine:3.2"
     }
 
-    {:ok, container} = Dockex.Client.create_and_start_container(container)
+    # Create and start a new container
+    {:ok, container} = Dockex.Client.create_and_start_container(pid, container)
 
-    {:ok, output} = Dockex.Client.get_container_logs(container)
+    # Fetch logs for a container
+    {:ok, output} = Dockex.Client.get_container_logs(pid, container)
+
+    # Stop a container
+    {:ok, container} = Dockex.Client.stop_container(pid, container)
+
+    # Delete a container
+    {:ok, ""} = Dockex.Client.delete_container(pid, container)

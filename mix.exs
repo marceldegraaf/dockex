@@ -15,6 +15,7 @@ defmodule Dockex.Mixfile do
   def application do
     [
       applications: [:logger, :httpoison],
+      mod: {Dockex, []},
     ]
   end
 
