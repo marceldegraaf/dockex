@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "get",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/containers/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a/json"
+    },
+    "response": {
+      "body": "{\"Id\":\"3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a\",\"Created\":\"2016-08-18T08:13:27.152733145Z\",\"Path\":\"/bin/sh\",\"Args\":[\"-c\",\"while true; do echo 'Hello world!'; sleep 5; done\"],\"State\":{\"Status\":\"running\",\"Running\":true,\"Paused\":false,\"Restarting\":false,\"OOMKilled\":false,\"Dead\":false,\"Pid\":4608,\"ExitCode\":0,\"Error\":\"\",\"StartedAt\":\"2016-08-18T08:13:34.182741698Z\",\"FinishedAt\":\"0001-01-01T00:00:00Z\"},\"Image\":\"sha256:4933271a21f1a3eb183cae296ce2f405c8e0852fb4c90eae577b430393d7ef36\",\"ResolvConfPath\":\"/var/lib/docker/containers/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a/resolv.conf\",\"HostnamePath\":\"/var/lib/docker/containers/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a/hostname\",\"HostsPath\":\"/var/lib/docker/containers/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a/hosts\",\"LogPath\":\"/var/lib/docker/containers/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a-json.log\",\"Name\":\"/awesome_davinci\",\"RestartCount\":0,\"Driver\":\"aufs\",\"MountLabel\":\"\",\"ProcessLabel\":\"\",\"AppArmorProfile\":\"\",\"ExecIDs\":null,\"HostConfig\":{\"Binds\":null,\"ContainerIDFile\":\"\",\"LogConfig\":{\"Type\":\"json-file\",\"Config\":{}},\"NetworkMode\":\"default\",\"PortBindings\":null,\"RestartPolicy\":{\"Name\":\"\",\"MaximumRetryCount\":0},\"AutoRemove\":false,\"VolumeDriver\":\"\",\"VolumesFrom\":null,\"CapAdd\":null,\"CapDrop\":null,\"Dns\":null,\"DnsOptions\":null,\"DnsSearch\":null,\"ExtraHosts\":null,\"GroupAdd\":null,\"IpcMode\":\"\",\"Cgroup\":\"\",\"Links\":null,\"OomScoreAdj\":0,\"PidMode\":\"\",\"Privileged\":false,\"PublishAllPorts\":false,\"ReadonlyRootfs\":false,\"SecurityOpt\":null,\"StorageOpt\":null,\"UTSMode\":\"\",\"UsernsMode\":\"\",\"ShmSize\":67108864,\"ConsoleSize\":[0,0],\"Isolation\":\"\",\"CpuShares\":0,\"Memory\":0,\"CgroupParent\":\"\",\"BlkioWeight\":0,\"BlkioWeightDevice\":null,\"BlkioDeviceReadBps\":null,\"BlkioDeviceWriteBps\":null,\"BlkioDeviceReadIOps\":null,\"BlkioDeviceWriteIOps\":null,\"CpuPeriod\":0,\"CpuQuota\":0,\"CpusetCpus\":\"\",\"CpusetMems\":\"\",\"Devices\":null,\"DiskQuota\":0,\"KernelMemory\":0,\"MemoryReservation\":0,\"MemorySwap\":0,\"MemorySwappiness\":-1,\"OomKillDisable\":false,\"PidsLimit\":0,\"Ulimits\":null,\"CpuCount\":0,\"CpuPercent\":0,\"BlkioIOps\":0,\"BlkioBps\":0,\"SandboxSize\":0},\"GraphDriver\":{\"Name\":\"aufs\",\"Data\":null},\"Mounts\":[],\"Config\":{\"Hostname\":\"3d95a5a9b3b0\",\"Domainname\":\"\",\"User\":\"\",\"AttachStdin\":false,\"AttachStdout\":false,\"AttachStderr\":false,\"Tty\":false,\"OpenStdin\":false,\"StdinOnce\":false,\"Env\":[\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"],\"Cmd\":[\"/bin/sh\",\"-c\",\"while true; do echo 'Hello world!'; sleep 5; done\"],\"Image\":\"alpine:3.2\",\"Volumes\":null,\"WorkingDir\":\"\",\"Entrypoint\":null,\"OnBuild\":null,\"Labels\":{}},\"NetworkSettings\":{\"Bridge\":\"\",\"SandboxID\":\"7cdb4d03b06bd1e969b59c95258d2e0fbe5e8bae9aae18750e8e3aba92f430ea\",\"HairpinMode\":false,\"LinkLocalIPv6Address\":\"\",\"LinkLocalIPv6PrefixLen\":0,\"Ports\":{},\"SandboxKey\":\"/var/run/docker/netns/7cdb4d03b06b\",\"SecondaryIPAddresses\":null,\"SecondaryIPv6Addresses\":null,\"EndpointID\":\"3cc472fad0dcad113ea960188cd1e9f0baa8844a74b0d51fa1839e4cf75e8ac2\",\"Gateway\":\"172.17.0.1\",\"GlobalIPv6Address\":\"\",\"GlobalIPv6PrefixLen\":0,\"IPAddress\":\"172.17.0.2\",\"IPPrefixLen\":16,\"IPv6Gateway\":\"\",\"MacAddress\":\"02:42:ac:11:00:02\",\"Networks\":{\"bridge\":{\"IPAMConfig\":null,\"Links\":null,\"Aliases\":null,\"NetworkID\":\"3dbb1492b9077681997e87b76179d8b5411cecdc5d5890874bcb78964d1c5383\",\"EndpointID\":\"3cc472fad0dcad113ea960188cd1e9f0baa8844a74b0d51fa1839e4cf75e8ac2\",\"Gateway\":\"172.17.0.1\",\"IPAddress\":\"172.17.0.2\",\"IPPrefixLen\":16,\"IPv6Gateway\":\"\",\"GlobalIPv6Address\":\"\",\"GlobalIPv6PrefixLen\":0,\"MacAddress\":\"02:42:ac:11:00:02\"}}}}\n",
+      "headers": {
+        "Content-Type": "application/json",
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:48:35 GMT",
+        "Transfer-Encoding": "chunked"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

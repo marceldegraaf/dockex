@@ -1,0 +1,28 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "post",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/containers/a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455/restart?t=5"
+    },
+    "response": {
+      "body": "",
+      "headers": {
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:52:28 GMT"
+      },
+      "status_code": 204,
+      "type": "ok"
+    }
+  }
+]

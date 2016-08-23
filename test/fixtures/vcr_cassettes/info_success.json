@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "get",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/info"
+    },
+    "response": {
+      "body": "{\"ID\":\"FW6E:MWTX:WYIP:JZD6:WW4X:S3QI:TYDN:OHQB:2UF6:GRXF:XDPP:4UXY\",\"Containers\":3,\"ContainersRunning\":1,\"ContainersPaused\":0,\"ContainersStopped\":2,\"Images\":28,\"Driver\":\"aufs\",\"DriverStatus\":[[\"Root Dir\",\"/var/lib/docker/aufs\"],[\"Backing Filesystem\",\"extfs\"],[\"Dirs\",\"115\"],[\"Dirperm1 Supported\",\"false\"]],\"SystemStatus\":null,\"Plugins\":{\"Volume\":[\"local\"],\"Network\":[\"bridge\",\"null\",\"host\"],\"Authorization\":null},\"MemoryLimit\":true,\"SwapLimit\":true,\"KernelMemory\":true,\"CpuCfsPeriod\":true,\"CpuCfsQuota\":true,\"CPUShares\":true,\"CPUSet\":true,\"IPv4Forwarding\":true,\"BridgeNfIptables\":true,\"BridgeNfIp6tables\":true,\"Debug\":false,\"NFd\":19,\"OomKillDisable\":true,\"NGoroutines\":40,\"SystemTime\":\"2016-08-23T08:48:34.801106898-04:00\",\"ExecutionDriver\":\"\",\"LoggingDriver\":\"json-file\",\"CgroupDriver\":\"cgroupfs\",\"NEventsListener\":0,\"KernelVersion\":\"3.13.0-85-generic\",\"OperatingSystem\":\"Ubuntu 14.04.4 LTS\",\"OSType\":\"linux\",\"Architecture\":\"x86_64\",\"IndexServerAddress\":\"https://index.docker.io/v1/\",\"RegistryConfig\":{\"InsecureRegistryCIDRs\":[\"127.0.0.0/8\"],\"IndexConfigs\":{\"docker.io\":{\"Name\":\"docker.io\",\"Mirrors\":null,\"Secure\":true,\"Official\":true}},\"Mirrors\":null},\"NCPU\":2,\"MemTotal\":4145397760,\"DockerRootDir\":\"/var/lib/docker\",\"HttpProxy\":\"\",\"HttpsProxy\":\"\",\"NoProxy\":\"\",\"Name\":\"cc67a3dd\",\"Labels\":[\"provider=digitalocean\"],\"ExperimentalBuild\":false,\"ServerVersion\":\"1.11.2\",\"ClusterStore\":\"\",\"ClusterAdvertise\":\"\"}\n",
+      "headers": {
+        "Content-Type": "application/json",
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:48:34 GMT",
+        "Content-Length": "1408"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

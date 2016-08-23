@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "get",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/containers/3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a/logs?stdout=1&tail=50"
+    },
+    "response": {
+      "body": "\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n\u0001\u0000\u0000\u0000\u0000\u0000\u0000\rHello world!\n",
+      "headers": {
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:48:34 GMT",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

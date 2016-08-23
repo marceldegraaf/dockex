@@ -1,0 +1,56 @@
+[
+  {
+    "request": {
+      "body": "{\"image\":\"alpine:3.2\",\"id\":null,\"env\":[],\"cmd\":[\"/bin/echo\",\"hi!\"],\"attach_stdout\":false,\"attach_stdin\":false,\"attach_stderr\":false}",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "post",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/containers/create?name=test_2"
+    },
+    "response": {
+      "body": "{\"Id\":\"abe70fd8df01964f6238b34f98d0222b25f99513a4b79d24814be12326fe5c07\",\"Warnings\":null}\n",
+      "headers": {
+        "Content-Type": "application/json",
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:55:13 GMT",
+        "Content-Length": "90"
+      },
+      "status_code": 201,
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "post",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/containers/abe70fd8df01964f6238b34f98d0222b25f99513a4b79d24814be12326fe5c07/start"
+    },
+    "response": {
+      "body": "",
+      "headers": {
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:55:13 GMT"
+      },
+      "status_code": 204,
+      "type": "ok"
+    }
+  }
+]

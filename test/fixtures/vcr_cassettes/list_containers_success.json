@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "get",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/containers/json"
+    },
+    "response": {
+      "body": "[{\"Id\":\"3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a\",\"Names\":[\"/awesome_davinci\"],\"Image\":\"alpine:3.2\",\"ImageID\":\"sha256:4933271a21f1a3eb183cae296ce2f405c8e0852fb4c90eae577b430393d7ef36\",\"Command\":\"/bin/sh -c 'while true; do echo 'Hello world!'; sleep 5; done'\",\"Created\":1471508007,\"Ports\":[],\"Labels\":{},\"State\":\"running\",\"Status\":\"Up 5 days\",\"HostConfig\":{\"NetworkMode\":\"default\"},\"NetworkSettings\":{\"Networks\":{\"bridge\":{\"IPAMConfig\":null,\"Links\":null,\"Aliases\":null,\"NetworkID\":\"\",\"EndpointID\":\"3cc472fad0dcad113ea960188cd1e9f0baa8844a74b0d51fa1839e4cf75e8ac2\",\"Gateway\":\"172.17.0.1\",\"IPAddress\":\"172.17.0.2\",\"IPPrefixLen\":16,\"IPv6Gateway\":\"\",\"GlobalIPv6Address\":\"\",\"GlobalIPv6PrefixLen\":0,\"MacAddress\":\"02:42:ac:11:00:02\"}}},\"Mounts\":[]}]\n",
+      "headers": {
+        "Content-Type": "application/json",
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Tue, 23 Aug 2016 12:48:35 GMT",
+        "Content-Length": "766"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

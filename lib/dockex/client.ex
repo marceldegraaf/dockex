@@ -97,8 +97,16 @@ defmodule Dockex.Client do
   Stop a running container.
   """
   @spec stop_container(pid, struct) :: {:ok, struct} | {:error, String.t}
-  def stop_container(pid, %Dockex.Container{} = container) do
-    GenServer.call(pid, {:stop_container, container})
+  def stop_container(pid, %Dockex.Container{} = container, timeout \\ nil) do
+    GenServer.call(pid, {:stop_container, container, timeout})
+  end
+
+  @doc """
+  Restart a running container.
+  """
+  @spec restart_container(pid, struct) :: {:ok, struct} | {:error, String.t}
+  def restart_container(pid, %Dockex.Container{} = container, timeout \\ nil) do
+    GenServer.call(pid, {:restart_container, container, timeout})
   end
 
   @doc """
@@ -116,7 +124,7 @@ defmodule Dockex.Client do
   def handle_call(:ping, _from, state) do
     result = case get("/_ping", state) do
       {:ok, %HTTPoison.Response{status_code: 200, body: "OK"}} -> {:ok, "OK"}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, to_string(reason)}
     end
 
     {:reply, result, state}
@@ -214,10 +222,20 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call({:stop_container, %Dockex.Container{id: id} = container}, _from, state) do
-    result = case post("/containers/#{id}/stop", state, "") do
+  def handle_call({:stop_container, %Dockex.Container{id: id} = container, timeout}, _from, state) do
+    result = case post("/containers/#{id}/stop", state, "", params: %{t: timeout}) do
       {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
       {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
+      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+    end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:restart_container, %Dockex.Container{id: id} = container, timeout}, _from, state) do
+    result = case post("/containers/#{id}/restart", state, "", params: %{t: timeout}) do
+      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
     end
