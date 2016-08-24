@@ -6,7 +6,7 @@ defmodule Dockex.Client do
   end
 
   def start_link(%Dockex.Client.Config{} = config) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+    GenServer.start_link(__MODULE__, config)
   end
 
   @doc """
