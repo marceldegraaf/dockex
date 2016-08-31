@@ -125,6 +125,7 @@ defmodule Dockex.Client do
     result = case get("/_ping", state) do
       {:ok, %HTTPoison.Response{status_code: 200, body: "OK"}} -> {:ok, "OK"}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, to_string(reason)}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -134,6 +135,7 @@ defmodule Dockex.Client do
     result = case get("/info", state) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -143,6 +145,7 @@ defmodule Dockex.Client do
     result = case get("/containers/json", state) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -152,6 +155,7 @@ defmodule Dockex.Client do
     result = case get("/containers/#{id}/json", state) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -181,6 +185,8 @@ defmodule Dockex.Client do
 
       {:error, %HTTPoison.Error{reason: reason}} ->
         {:error, reason}
+
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -206,6 +212,8 @@ defmodule Dockex.Client do
 
       {:error, %HTTPoison.Error{reason: reason}} ->
         {:error, reason}
+
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -217,6 +225,7 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -228,6 +237,7 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -238,6 +248,7 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -248,6 +259,7 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, ""}
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
 
     {:reply, result, state}
@@ -262,6 +274,7 @@ defmodule Dockex.Client do
   defp delete(path, state), do: delete(path, state, [])
   defp delete(path, state, options), do: request(:delete, path, state, "", options)
 
+  defp request(_, _, %{config: %{base_url: nil}}, _, _), do: {:error, "Dockex is not configured"}
   defp request(method, path, state, body, options) do
     url     = state.config.base_url <> path
     headers = [{"Content-Type", "application/json"}]
