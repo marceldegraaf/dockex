@@ -4,6 +4,21 @@ defmodule Dockex.Client.Test do
 
   alias Dockex.Client
 
+  @container_config %{
+    "Env" => nil,
+    "ExposedPorts" => %{"22/tcp" => %{}},
+    "HostConfig" => %{
+      "Binds" => [],
+      "ExtraHosts" => [],
+      "Links" => [],
+      "PortBindings" => %{},
+      "RestartPolicy" => %{"MaximumRetryCount" => 3, "Name" => "always"},
+      "Volumes" => []
+    },
+    "Image" => "alpine:3.2",
+    "Name" => "alpine_amazing_alzheimer"
+  }
+
   setup_all do
     ExVCR.Config.cassette_library_dir("test/fixtures/vcr_cassettes")
 
@@ -72,8 +87,7 @@ defmodule Dockex.Client.Test do
 
   test "create container: success", %{client: client} do
     use_cassette "create_container_success" do
-      container = %Dockex.Container{name: "test", image: "alpine:3.2", cmd: ["/bin/echo", "hi!"]}
-      {:ok, response} = Client.create_container(client, container)
+      {:ok, response} = Client.create_container(client, @container_config)
 
       assert response.id == "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
     end
@@ -90,8 +104,7 @@ defmodule Dockex.Client.Test do
 
   test "create and start container: success", %{client: client} do
     use_cassette "create_and_start_container_success" do
-      container = %Dockex.Container{cmd: ["/bin/echo", "hi!"], image: "alpine:3.2", name: "test_2"}
-      {:ok, response} = Client.create_and_start_container(client, container)
+      {:ok, response} = Client.create_and_start_container(client, @container_config)
 
       assert response.id == "abe70fd8df01964f6238b34f98d0222b25f99513a4b79d24814be12326fe5c07"
     end

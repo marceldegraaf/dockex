@@ -65,11 +65,21 @@ defmodule Dockex.Client do
   end
 
   @doc """
-  Create a container.
+  Create a container from a map. This map represents the Docker configuration
+  that is posted to the Docker API in JSON format. E.g.:
+
+    %{
+      "Name": "mysql_amazing_alzheimer",
+      "Image": "alpine:3.2",
+      "HostConfig": %{ ... },
+      "PortBindings": %{ ... },
+      "Volumes": [ ... ],
+      ...
+    }
   """
-  @spec create_container(pid, struct) :: {:ok, struct} | {:error, String.t}
-  def create_container(pid, %Dockex.Container{} = container) do
-    GenServer.call(pid, {:create_container, container})
+  @spec create_container(pid, map) :: {:ok, map} | {:error, String.t}
+  def create_container(pid, %{} = config) do
+    GenServer.call(pid, {:create_container, config})
   end
 
   @doc """
@@ -83,10 +93,10 @@ defmodule Dockex.Client do
   @doc """
   Create and start a container at the same time.
   """
-  @spec create_and_start_container(pid, struct) :: {:ok, struct} | {:error, String.t}
-  def create_and_start_container(pid, %Dockex.Container{} = container) do
+  @spec create_and_start_container(pid, map) :: {:ok, struct} | {:error, String.t}
+  def create_and_start_container(pid, %{} = config) do
     with \
-      {:ok, container} <- create_container(pid, container),
+      {:ok, container} <- create_container(pid, config),
       {:ok, container} <- start_container(pid, container)
     do \
       {:ok, container}
@@ -193,14 +203,14 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call({:create_container, %Dockex.Container{} = container}, _from, state) do
-    {name, container} = container |> Map.pop(:name)
-    {:ok, body} = container |> Poison.encode
+  def handle_call({:create_container, %{} = config}, _from, state) do
+    {name, config} = config |> Map.pop("Name")
+    {:ok, body} = config |> Poison.encode
 
     result = case post("/containers/create", state, body, params: %{name: name}) do
       {:ok, %HTTPoison.Response{status_code: 201, body: body}} ->
         {:ok, body} = Poison.decode(body)
-        {:ok, %Dockex.Container{container | id: body["Id"]}}
+        {:ok, %Dockex.Container{id: body["Id"]}}
 
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} ->
         {:error, message}
