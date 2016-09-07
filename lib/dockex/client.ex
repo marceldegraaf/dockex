@@ -154,6 +154,7 @@ defmodule Dockex.Client do
   def handle_call({:inspect_container, %Dockex.Container{id: id}}, _from, state) do
     result = case get("/containers/#{id}/json", state) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
+      {:ok, %HTTPoison.Response{status_code: result_code}} -> {:error, result_code}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
