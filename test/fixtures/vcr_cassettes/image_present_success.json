@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "get",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/images/json?filter=alpine%3A3.2"
+    },
+    "response": {
+      "body": "[{\"Id\":\"sha256:4933271a21f1a3eb183cae296ce2f405c8e0852fb4c90eae577b430393d7ef36\",\"ParentId\":\"\",\"RepoTags\":[\"alpine:3.2\"],\"RepoDigests\":null,\"Created\":1466711707,\"Size\":5256501,\"VirtualSize\":5256501,\"Labels\":null}]\n",
+      "headers": {
+        "Content-Type": "application/json",
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Wed, 07 Sep 2016 19:33:12 GMT",
+        "Content-Length": "214"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

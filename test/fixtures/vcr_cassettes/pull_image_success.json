@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "method": "post",
+      "options": {
+        "ssl_options": {
+          "certfile": "test/fixtures/certs/cert.pem",
+          "keyfile": "test/fixtures/certs/key.pem"
+        }
+      },
+      "request_body": "",
+      "url": "https://docker.example.dev:2376/images/create?fromImage=alpine%3A3.2"
+    },
+    "response": {
+      "body": "{\"status\":\"Pulling from library/alpine\",\"id\":\"3.2\"}\r\n{\"status\":\"Digest: sha256:9c6c40abb6a9180603068a413deca450ef13c381974b392a25af948ca87c3c14\"}\r\n{\"status\":\"Status: Image is up to date for alpine:3.2\"}\r\n",
+      "headers": {
+        "Content-Type": "application/json",
+        "Server": "Docker/1.11.2 (linux)",
+        "Date": "Wed, 07 Sep 2016 19:34:16 GMT",
+        "Transfer-Encoding": "chunked"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

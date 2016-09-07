@@ -127,6 +127,36 @@ defmodule Dockex.Client do
     GenServer.call(pid, {:delete_container, container})
   end
 
+  @doc """
+  List available Docker images on the server.
+  """
+  @spec list_images(pid) :: {:ok, list(String.t)} | {:error, String.t}
+  def list_images(pid), do: GenServer.call(pid, {:list_images, ""})
+
+  @doc """
+  List Docker images on the server whose name is `name`.
+  """
+  @spec list_images(pid, String.t) :: {:ok, list(String.t)} | {:error, String.t}
+  def list_images(pid, name), do: GenServer.call(pid, {:list_images, name})
+
+  @doc """
+  Test if a Docker image is present on the server.
+  """
+  @spec image_present?(pid, String.t) :: {:ok, boolean} | {:error, String.t}
+  def image_present?(pid, name) do
+    {:ok, images} = list_images(pid, name)
+
+    images |> Enum.count > 0
+  end
+
+  @doc """
+  Pull a Docker image.
+  """
+  @spec pull_image(pid, String.t) :: {:ok, String.t} | {:error, String.t}
+  def pull_image(pid, name) do
+    GenServer.call(pid, {:pull_image, name})
+  end
+
   #
   # GenServer callbacks
   #
@@ -269,6 +299,33 @@ defmodule Dockex.Client do
     result = case delete("/containers/#{id}", state) do
       {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, ""}
       {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
+    end
+
+    {:reply, result, state}
+  end
+
+  # TODO: add support for streaming output. The Docker API streams JSON messages
+  # with pull progess while pulling. HTTPoison has a `stream_to` option that accepts
+  # a PID where streamed responses will be sent.
+  #
+  # See:
+  #   - https://github.com/edgurgel/httpoison/blob/master/lib/httpoison/base.ex#L127
+  #   - https://docs.docker.com/engine/reference/api/docker_remote_api_v1.24/#/create-an-image
+  def handle_call({:pull_image, name}, _from, state) do
+    result = case post("/images/create", state, "", params: %{fromImage: name}) do
+      {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, "Pulled image #{name}"}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
+    end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:list_images, name}, _from, state) do
+    result = case get("/images/json", state, params: %{filter: name}) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end

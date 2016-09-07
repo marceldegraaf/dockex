@@ -19,6 +19,28 @@ defmodule Dockex.Client.Test do
     "Name" => "alpine_amazing_alzheimer"
   }
 
+  @image %{
+    "Created" => 1470937613,
+    "Id" => "sha256:07a18c0f21ae608cf2e79e050dc7fc632bca19824a8876da084962ba86877d18",
+    "Labels" => %{},
+    "ParentId" => "",
+    "RepoDigests" => nil,
+    "RepoTags" => ["ubuntu:16.10", "ubuntu:devel"],
+    "Size" => 99900662,
+    "VirtualSize" => 99900662
+  }
+
+  @filtered_image %{
+    "ParentId" => "",
+    "RepoDigests" => nil,
+    "Created" => 1466711707,
+    "Id" => "sha256:4933271a21f1a3eb183cae296ce2f405c8e0852fb4c90eae577b430393d7ef36",
+    "Labels" => nil,
+    "RepoTags" => ["alpine:3.2"],
+    "Size" => 5256501,
+    "VirtualSize" => 5256501
+  }
+
   setup_all do
     ExVCR.Config.cassette_library_dir("test/fixtures/vcr_cassettes")
 
@@ -134,6 +156,38 @@ defmodule Dockex.Client.Test do
       {:ok, response} = Client.delete_container(client, container)
 
       assert response == ""
+    end
+  end
+
+  test "list images: success", %{client: client} do
+    use_cassette "list_images_success" do
+      {:ok, response} = Client.list_images(client)
+
+      assert response |> Enum.count == 28
+      assert response |> Enum.at(0) == @image
+    end
+  end
+
+  test "list images by name: success", %{client: client} do
+    use_cassette "list_images_by_name_success" do
+      {:ok, response} = Client.list_images(client, "alpine:3.2")
+
+      assert response |> Enum.count == 1
+      assert response |> Enum.at(0) == @filtered_image
+    end
+  end
+
+  test "image present: success", %{client: client} do
+    use_cassette "image_present_success" do
+      assert Client.image_present?(client, "alpine:3.2") == true
+    end
+  end
+
+  test "pull image: success", %{client: client} do
+    use_cassette "pull_image_success" do
+      {:ok, response} = Client.pull_image(client, "alpine:3.2")
+
+      assert response == "Pulled image alpine:3.2"
     end
   end
 end
