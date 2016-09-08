@@ -5,6 +5,14 @@ defmodule Dockex.Client do
     defstruct base_url: nil, ssl_certificate: nil, ssl_key: nil
   end
 
+  defmodule AsyncReply do
+    defstruct event: nil, payload: nil, topic: nil
+  end
+
+  defmodule AsyncEnd do
+    defstruct event: nil, payload: nil, topic: nil
+  end
+
   def start_link(%Dockex.Client.Config{} = config) do
     GenServer.start_link(__MODULE__, config)
   end
@@ -40,28 +48,26 @@ defmodule Dockex.Client do
   def list_containers(pid), do: GenServer.call(pid, :list_containers)
 
   @doc """
-  Inspect a container. Accepts a `%Dockex.Container{}` struct to specify
+  Inspect a container. Accepts an id, a name or a `%Dockex.Container{}` struct to specify
   which container to inspect.
   """
-  @spec inspect_container(pid, struct) :: {:ok, map} | {:error, String.t}
-  def inspect_container(pid, container) do
-    GenServer.call(pid, {:inspect_container, container})
+  @spec inspect_container(pid, String.t) :: {:ok, map} | {:error, String.t}
+  def inspect_container(pid, identifier) when is_binary(identifier) do
+    GenServer.call(pid, {:inspect_container, identifier})
   end
-
-  @doc """
-  Fetch the last 50 lines of container logs.
-  """
-  @spec get_container_logs(pid, struct) :: {:ok, String.t} | {:error, String.t}
-  def get_container_logs(pid, %Dockex.Container{} = container) do
-    get_container_logs(pid, container, 50)
-  end
+  def inspect_container(pid, %Dockex.Container{id: id}), do: inspect_container(pid, id)
 
   @doc """
   Fetch the last `number` lines of container logs.
   """
-  @spec get_container_logs(pid, struct, number) :: {:ok, String.t} | {:error, String.t}
-  def get_container_logs(pid, %Dockex.Container{} = container, number) do
-    GenServer.call(pid, {:get_container_logs, container, number})
+  @spec get_container_logs(pid, String.t, number) :: {:ok, String.t} | {:error, String.t}
+  def get_container_logs(pid, identifier, number) when is_binary(identifier) do
+    GenServer.call(pid, {:get_container_logs, identifier, number})
+  end
+  def get_container_logs(pid, %Dockex.Container{id: id}), do: get_container_logs(pid, id, 50)
+
+  def stream_logs(pid, identifier, number, target_pid) do
+    GenServer.call(pid, {:stream_logs, identifier, number, target_pid})
   end
 
   @doc """
@@ -85,10 +91,11 @@ defmodule Dockex.Client do
   @doc """
   Start a previously created container.
   """
-  @spec start_container(pid, struct) :: {:ok, struct} | {:error, String.t}
-  def start_container(pid, %Dockex.Container{} = container) do
-    GenServer.call(pid, {:start_container, container})
+  @spec start_container(pid, String.t) :: {:ok, struct} | {:error, String.t}
+  def start_container(pid, identifier) when is_binary(identifier) do
+    GenServer.call(pid, {:start_container, identifier})
   end
+  def start_container(pid, %Dockex.Container{id: id}), do: start_container(pid, id)
 
   @doc """
   Create and start a container at the same time.
@@ -96,36 +103,40 @@ defmodule Dockex.Client do
   @spec create_and_start_container(pid, map) :: {:ok, struct} | {:error, String.t}
   def create_and_start_container(pid, %{} = config) do
     with \
-      {:ok, container} <- create_container(pid, config),
-      {:ok, container} <- start_container(pid, container)
+      {:ok, container} <- create_container(pid, config), \
+      {:ok, container} <- start_container(pid, container) \
     do \
       {:ok, container}
     end
   end
 
+
   @doc """
   Stop a running container.
   """
-  @spec stop_container(pid, struct) :: {:ok, struct} | {:error, String.t}
-  def stop_container(pid, %Dockex.Container{} = container, timeout \\ nil) do
-    GenServer.call(pid, {:stop_container, container, timeout})
+  @spec stop_container(pid, String.t, number) :: {:ok, struct} | {:error, String.t}
+  def stop_container(pid, identifier, timeout) when is_binary(identifier) do
+    GenServer.call(pid, {:stop_container, identifier, timeout})
   end
+  def stop_container(pid, %Dockex.Container{id: id}), do: stop_container(pid, id, nil)
 
   @doc """
   Restart a running container.
   """
-  @spec restart_container(pid, struct) :: {:ok, struct} | {:error, String.t}
-  def restart_container(pid, %Dockex.Container{} = container, timeout \\ nil) do
-    GenServer.call(pid, {:restart_container, container, timeout})
+  @spec restart_container(pid, String.t, number) :: {:ok, struct} | {:error, String.t}
+  def restart_container(pid, identifier, timeout) do
+    GenServer.call(pid, {:restart_container, identifier, timeout})
   end
+  def restart_container(pid, %Dockex.Container{id: id}), do: restart_container(pid, id, nil)
 
   @doc """
   Delete a container.
   """
-  @spec delete_container(pid, struct) :: {:ok, String.t} | {:error, String.t}
-  def delete_container(pid, %Dockex.Container{} = container) do
-    GenServer.call(pid, {:delete_container, container})
+  @spec delete_container(pid, String.t) :: {:ok, String.t} | {:error, String.t}
+  def delete_container(pid, identifier) when is_binary(identifier) do
+    GenServer.call(pid, {:delete_container, identifier})
   end
+  def delete_container(pid, %Dockex.Container{id: id}), do: delete_container(pid, id)
 
   @doc """
   List available Docker images on the server.
@@ -162,58 +173,37 @@ defmodule Dockex.Client do
   #
 
   def handle_call(:ping, _from, state) do
-    result = case get("/_ping", state) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: "OK"}} -> {:ok, "OK"}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, to_string(reason)}
-      {:error, reason} -> {:error, reason}
-    end
-
+    result = get("/_ping", state) |> handle_docker_response
     {:reply, result, state}
   end
 
   def handle_call(:info, _from, state) do
-    result = case get("/info", state) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+    result = get("/info", state) |> handle_docker_json_response
     {:reply, result, state}
   end
 
   def handle_call(:list_containers, _from, state) do
-    result = case get("/containers/json", state) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+    result = get("/containers/json", state) |> handle_docker_json_response
     {:reply, result, state}
   end
 
-  def handle_call({:inspect_container, %Dockex.Container{id: id}}, _from, state) do
-    result = case get("/containers/#{id}/json", state) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
-      {:ok, %HTTPoison.Response{status_code: result_code}} -> {:error, result_code}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+  def handle_call({:inspect_container, identifier}, _from, state) do
+    result = get("/containers/#{identifier}/json", state) |> handle_docker_json_response
     {:reply, result, state}
   end
 
   # TODO This works:
   #
-  #   Dockex.Client.get_container_logs(client, %Dockex.Container{id: "..."}, 1)
+  #   Dockex.Client.get_container_logs(client, identifier, 1)
   #
   # But this still returns an unparsed bitstring:
   #
-  #   Dockex.Client.get_container_logs(client, %Dockex.Container{id: ""}, 2)
+  #   Dockex.Client.get_container_logs(client, identifier, 2)
   #
   # Probably because each new line starts with the same <<type, 0, 0, 0, _size ... >> information?
   #
-  def handle_call({:get_container_logs, %Dockex.Container{id: id}, number}, _from, state) do
-    result = case get("/containers/#{id}/logs", state, params: %{stdout: 1, tail: number}) do
+  def handle_call({:get_container_logs, identifier, number}, _from, state) do
+    result = case get("/containers/#{identifier}/logs", state, params: %{stdout: 1, tail: number}) do
       {:ok, %HTTPoison.Response{status_code: 200, body: ""}} ->
         {:ok, ""}
 
@@ -260,50 +250,50 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call({:start_container, %Dockex.Container{id: id} = container}, _from, state) do
-    result = case post("/containers/#{id}/start", state, "") do
-      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
-      {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
-      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+  def handle_call({:start_container, identifier}, _from, state) do
+    result = post("/containers/#{identifier}/start", state, "") |> handle_docker_response
     {:reply, result, state}
   end
 
-  def handle_call({:stop_container, %Dockex.Container{id: id} = container, timeout}, _from, state) do
-    result = case post("/containers/#{id}/stop", state, "", params: %{t: timeout}) do
-      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
-      {:ok, %HTTPoison.Response{status_code: 304}} -> {:ok, container}
-      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+  def handle_call({:stop_container, identifier, timeout}, _from, state) do
+    result = post("/containers/#{identifier}/stop", state, "", params: %{t: timeout}) |> handle_docker_response
     {:reply, result, state}
   end
 
-  def handle_call({:restart_container, %Dockex.Container{id: id} = container, timeout}, _from, state) do
-    result = case post("/containers/#{id}/restart", state, "", params: %{t: timeout}) do
-      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, container}
-      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+  def handle_call({:restart_container, identifier, timeout}, _from, state) do
+    result = post("/containers/#{identifier}/restart", state, "", params: %{t: timeout}) |> handle_docker_response
     {:reply, result, state}
   end
 
-  def handle_call({:delete_container, %Dockex.Container{id: id}}, _from, state) do
-    result = case delete("/containers/#{id}", state) do
-      {:ok, %HTTPoison.Response{status_code: 204}} -> {:ok, ""}
-      {:ok, %HTTPoison.Response{status_code: 404, body: message}} -> {:error, message}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
-
+  def handle_call({:delete_container, identifier}, _from, state) do
+    result = delete("/containers/#{identifier}", state) |> handle_docker_response
     {:reply, result, state}
+  end
+
+
+  def handle_call({:stream_logs, identifier, number, target_pid}, from, state) do
+    task = Task.async(fn -> start_receiving(identifier, target_pid) end)
+    IO.inspect(task)
+    request = request(:get, "/containers/#{identifier}/logs", state, "", [{:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}])
+
+    # TODO: monitor task
+
+    {:reply, request, state}
+  end
+
+  def start_receiving(identifier, target_pid) do
+    receive do
+
+      %HTTPoison.AsyncChunk{chunk: new_data} ->
+        send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: new_data, topic: identifier}
+        start_receiving(identifier, target_pid)
+
+      %HTTPoison.AsyncEnd{} ->
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
+
+      :close ->
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
+    end
   end
 
   # TODO: add support for streaming output. The Docker API streams JSON messages
@@ -357,6 +347,25 @@ defmodule Dockex.Client do
     ])
 
     HTTPoison.request(method, url, body, headers, options)
+  end
+
+  defp handle_docker_response(result_tuple) do
+    case result_tuple do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> {:ok ,body}
+      {:ok, %HTTPoison.Response{status_code: 201, body: body}} -> {:ok, body}
+      {:ok, %HTTPoison.Response{status_code: 204, body: body}} -> {:ok, body}
+      {:ok, %HTTPoison.Response{status_code: 304, body: body}} -> {:ok, body}
+      {:ok, %HTTPoison.Response{status_code: result_code, body: body}} -> {:error, result_code <> "" <> body}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {_, reason} -> {:error, reason}
+    end
+  end
+
+  defp handle_docker_json_response(result_tuple) do
+    case handle_docker_response(result_tuple) do
+      {:ok, body} -> {:ok, Poison.decode(body)}
+      {:error, error_message} -> {:error, error_message}
+    end
   end
 
 end
