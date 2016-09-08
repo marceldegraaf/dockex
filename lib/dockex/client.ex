@@ -273,7 +273,6 @@ defmodule Dockex.Client do
 
   def handle_call({:stream_logs, identifier, number, target_pid}, from, state) do
     task = Task.async(fn -> start_receiving(identifier, target_pid) end)
-    IO.inspect(task)
     request = request(:get, "/containers/#{identifier}/logs", state, "", [{:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}])
 
     # TODO: monitor task
@@ -363,7 +362,7 @@ defmodule Dockex.Client do
 
   defp handle_docker_json_response(result_tuple) do
     case handle_docker_response(result_tuple) do
-      {:ok, body} -> {:ok, Poison.decode(body)}
+      {:ok, body} -> Poison.decode(body)
       {:error, error_message} -> {:error, error_message}
     end
   end
