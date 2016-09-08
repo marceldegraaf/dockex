@@ -5,6 +5,14 @@ defmodule Dockex.Client do
     defstruct base_url: nil, ssl_certificate: nil, ssl_key: nil
   end
 
+  defmodule AsyncReply do
+    defstruct event: nil, payload: nil, topic: nil
+  end
+
+  defmodule AsyncEnd do
+    defstruct event: nil, payload: nil, topic: nil
+  end
+
   def start_link(%Dockex.Client.Config{} = config) do
     GenServer.start_link(__MODULE__, config)
   end
@@ -58,8 +66,8 @@ defmodule Dockex.Client do
   end
   def get_container_logs(pid, %Dockex.Container{id: id}), do: get_container_logs(pid, id, 50)
 
-  def stream_logs(pid, identifier, number) do
-    GenServer.cast(pid, {:stream_logs, identifier, number})
+  def stream_logs(pid, identifier, number, target_pid) do
+    GenServer.call(pid, {:stream_logs, identifier, number, target_pid})
   end
 
   @doc """
@@ -223,25 +231,28 @@ defmodule Dockex.Client do
   end
 
 
-  def handle_cast({:stream_logs, identifier, number}, state) do
-    task = Task.async(fn -> start_receiving(identifier) end)
-    request = request(:get, "/containers/#{identifier}/logs", state, "", [{:params, %{stdout: 1, stderr: 1, follow: 1, details: 1, timestamps: 1, tail: number}}, {:stream_to, task.pid}])
-    {:noreply, state}
+  def handle_call({:stream_logs, identifier, number, target_pid}, from, state) do
+    task = Task.async(fn -> start_receiving(identifier, target_pid) end)
+    IO.inspect(task)
+    request = request(:get, "/containers/#{identifier}/logs", state, "", [{:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}])
+
+    # TODO: monitor task
+
+    {:reply, request, state}
   end
 
-  def start_receiving(identifier) do
+  def start_receiving(identifier, target_pid) do
     receive do
 
       %HTTPoison.AsyncChunk{chunk: new_data} ->
-        IO.inspect("#{identifier}:#{new_data}")
-        start_receiving(identifier)
+        send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: new_data, topic: identifier}
+        start_receiving(identifier, target_pid)
 
       %HTTPoison.AsyncEnd{} ->
-        IO.inspect("#{identifier}: STREAM ENDED")
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
 
       :close ->
-        IO.inspect("#{identifier}: STREAM CLOSED")
-
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
     end
   end
 
