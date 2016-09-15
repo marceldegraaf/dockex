@@ -52,7 +52,7 @@ defmodule Dockex.Client.Test do
 
     {:ok, pid} = Dockex.Client.start_link(config)
 
-    {:ok, state: %{config: config}, client: pid}
+    {:ok, client: pid}
   end
 
   test "ping: success", %{client: client} do
