@@ -115,10 +115,10 @@ defmodule Dockex.Client do
   Stop a running container.
   """
   @spec stop_container(pid, String.t, number) :: {:ok, struct} | {:error, String.t}
-  def stop_container(pid, identifier, timeout) when is_binary(identifier) do
-    GenServer.call(pid, {:stop_container, identifier, timeout})
-  end
   def stop_container(pid, %Dockex.Container{id: id}), do: stop_container(pid, id, nil)
+  def stop_container(pid, %Dockex.Container{id: id}, timeout) do
+    GenServer.call(pid, {:stop_container, id, timeout})
+  end
 
   @doc """
   Restart a running container.
