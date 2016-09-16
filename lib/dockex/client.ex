@@ -115,16 +115,16 @@ defmodule Dockex.Client do
   Stop a running container.
   """
   @spec stop_container(pid, String.t, number) :: {:ok, struct} | {:error, String.t}
-  def stop_container(pid, %Dockex.Container{id: id}), do: stop_container(pid, id, nil)
-  def stop_container(pid, %Dockex.Container{id: id}, timeout) do
-    GenServer.call(pid, {:stop_container, id, timeout})
+  def stop_container(pid, identifier, timeout) when is_binary(identifier) do
+    GenServer.call(pid, {:stop_container, identifier, timeout})
   end
+  def stop_container(pid, %Dockex.Container{id: id}), do: stop_container(pid, id, nil)
 
   @doc """
   Restart a running container.
   """
   @spec restart_container(pid, String.t, number) :: {:ok, struct} | {:error, String.t}
-  def restart_container(pid, identifier, timeout) do
+  def restart_container(pid, identifier, timeout) when is_binary(identifier) do
     GenServer.call(pid, {:restart_container, identifier, timeout})
   end
   def restart_container(pid, %Dockex.Container{id: id}), do: restart_container(pid, id, nil)
@@ -251,22 +251,22 @@ defmodule Dockex.Client do
   end
 
   def handle_call({:start_container, identifier}, _from, state) do
-    result = post("/containers/#{identifier}/start", state, "") |> handle_docker_response
+    result = post("/containers/#{identifier}/start", state, "") |> handle_docker_response(identifier)
     {:reply, result, state}
   end
 
   def handle_call({:stop_container, identifier, timeout}, _from, state) do
-    result = post("/containers/#{identifier}/stop", state, "", params: %{t: timeout}) |> handle_docker_response
+    result = post("/containers/#{identifier}/stop", state, "", params: %{t: timeout}) |> handle_docker_response(identifier)
     {:reply, result, state}
   end
 
   def handle_call({:restart_container, identifier, timeout}, _from, state) do
-    result = post("/containers/#{identifier}/restart", state, "", params: %{t: timeout}) |> handle_docker_response
+    result = post("/containers/#{identifier}/restart", state, "", params: %{t: timeout}) |> handle_docker_response(identifier)
     {:reply, result, state}
   end
 
   def handle_call({:delete_container, identifier}, _from, state) do
-    result = delete("/containers/#{identifier}", state) |> handle_docker_response
+    result = delete("/containers/#{identifier}", state) |> handle_docker_response(identifier)
     {:reply, result, state}
   end
 
@@ -357,6 +357,13 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: result_code, body: body}} -> {:error, result_code <> "" <> body}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {_, reason} -> {:error, reason}
+    end
+  end
+
+  defp handle_docker_response(result_tuple, identifier) do
+    case handle_docker_response(result_tuple) do
+      {:ok, ""} -> {:ok, identifier}
+      {key, value} -> {key, value}
     end
   end
 

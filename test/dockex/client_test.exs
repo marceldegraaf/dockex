@@ -87,10 +87,10 @@ defmodule Dockex.Client.Test do
 
   test "inspect container: success", %{client: client} do
     use_cassette "inspect_container_success" do
-      container = %Dockex.Container{id: "3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a"}
+      container = "3d95a5a9b3b0d65e4aa646b29ed39a6bc56637d690d30e4cffc885db11c9eb5a"
       {:ok, response} = Client.inspect_container(client, container)
 
-      assert response["Id"] == container.id
+      assert response["Id"] == container
     end
   end
 
@@ -117,10 +117,10 @@ defmodule Dockex.Client.Test do
 
   test "start container: success", %{client: client} do
     use_cassette "start_container_success" do
-      container = %Dockex.Container{id: "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"}
+      container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
       {:ok, response} = Client.start_container(client, container)
 
-      assert response.id == container.id
+      assert response == container
     end
   end
 
@@ -128,34 +128,34 @@ defmodule Dockex.Client.Test do
     use_cassette "create_and_start_container_success" do
       {:ok, response} = Client.create_and_start_container(client, @container_config)
 
-      assert response.id == "abe70fd8df01964f6238b34f98d0222b25f99513a4b79d24814be12326fe5c07"
+      assert response == "abe70fd8df01964f6238b34f98d0222b25f99513a4b79d24814be12326fe5c07"
     end
   end
 
   test "stop container: success", %{client: client} do
     use_cassette "stop_container_success" do
-      container = %Dockex.Container{id: "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"}
+      container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
       {:ok, response} = Client.stop_container(client, container, 5)
 
-      assert response.id == container.id
+      assert response == container
     end
   end
 
   test "restart container: success", %{client: client} do
     use_cassette "restart_container_success" do
-      container = %Dockex.Container{id: "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"}
+      container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
       {:ok, response} = Client.restart_container(client, container, 5)
 
-      assert response.id == container.id
+      assert response == container
     end
   end
 
   test "delete container: success", %{client: client} do
     use_cassette "delete_container_success" do
-      container = %Dockex.Container{id: "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"}
+      container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
       {:ok, response} = Client.delete_container(client, container)
 
-      assert response == ""
+      assert response == "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
     end
   end
 
