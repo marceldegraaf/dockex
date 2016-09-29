@@ -271,28 +271,15 @@ defmodule Dockex.Client do
   end
 
 
-  def handle_call({:stream_logs, identifier, number, target_pid}, from, state) do
+  def handle_call({:stream_logs, identifier, number, target_pid}, _from, state) do
     task = Task.async(fn -> start_receiving(identifier, target_pid) end)
-    request = request(:get, "/containers/#{identifier}/logs", state, "", [{:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}])
+    request = request(:get, "/containers/#{identifier}/logs", state, "", [
+      {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}
+    ])
 
     # TODO: monitor task
 
     {:reply, request, state}
-  end
-
-  def start_receiving(identifier, target_pid) do
-    receive do
-
-      %HTTPoison.AsyncChunk{chunk: new_data} ->
-        send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: new_data, topic: identifier}
-        start_receiving(identifier, target_pid)
-
-      %HTTPoison.AsyncEnd{} ->
-        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
-
-      :close ->
-        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
-    end
   end
 
   # TODO: add support for streaming output. The Docker API streams JSON messages
@@ -320,6 +307,21 @@ defmodule Dockex.Client do
     end
 
     {:reply, result, state}
+  end
+
+  def start_receiving(identifier, target_pid) do
+    receive do
+
+      %HTTPoison.AsyncChunk{chunk: new_data} ->
+        send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: new_data, topic: identifier}
+        start_receiving(identifier, target_pid)
+
+      %HTTPoison.AsyncEnd{} ->
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
+
+      :close ->
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
+    end
   end
 
   defp get(path, state), do: get(path, state, [])
