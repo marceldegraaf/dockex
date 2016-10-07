@@ -139,6 +139,15 @@ defmodule Dockex.Client do
   def delete_container(pid, %Dockex.Container{id: id}), do: delete_container(pid, id)
 
   @doc """
+  Commit a container. Returns {:ok, %{"Id": "596069db4bf5"}} when successfull.
+  """
+  @spec commit_container(pid, String.t, String.t, String.t) :: {:ok, Map.t} | {:error, String.t}
+  def commit_container(pid, identifier, repo_name, tag_name) when is_binary(identifier) do
+    GenServer.call(pid, {:commit_container, identifier, repo_name, tag_name})
+  end
+  def commit_container(pid, %Dockex.Container{id: id}, repo_name, tag_name), do: commit_container(pid, id, repo_name, tag_name)
+
+  @doc """
   List available Docker images on the server.
   """
   @spec list_images(pid) :: {:ok, list(String.t)} | {:error, String.t}
@@ -267,6 +276,11 @@ defmodule Dockex.Client do
 
   def handle_call({:delete_container, identifier}, _from, state) do
     result = delete("/containers/#{identifier}", state) |> handle_docker_response(identifier)
+    {:reply, result, state}
+  end
+
+  def handle_call({:commit_container, identifier, repo, tag}, _from, state) do
+    result = post("/commit", state, "", params: %{container: identifier, repo: repo, tag: tag}) |> handle_docker_json_response
     {:reply, result, state}
   end
 

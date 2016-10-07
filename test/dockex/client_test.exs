@@ -150,6 +150,15 @@ defmodule Dockex.Client.Test do
     end
   end
 
+    test "commit container: success", %{client: client} do
+      use_cassette "commit_container_success" do
+        container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
+        {:ok, response} = Client.commit_container(client, container, "dockex", "latest")
+
+        assert response == %{"Id" => container }
+      end
+    end
+
   test "delete container: success", %{client: client} do
     use_cassette "delete_container_success" do
       container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
