@@ -148,6 +148,15 @@ defmodule Dockex.Client do
   def commit_container(pid, %Dockex.Container{id: id}, repo_name, tag_name), do: commit_container(pid, id, repo_name, tag_name)
 
   @doc """
+  Update a container. Returns {:ok, ""} when successfull.
+  """
+  @spec update_container(pid, String.t, Map.t) :: {:ok, Map.t} | {:error, String.t}
+  def update_container(pid, identifier, update_map) when is_binary(identifier) do
+    GenServer.call(pid, {:update_container, identifier, update_map})
+  end
+  def update_container(pid, %Dockex.Container{id: id}, update_map), do: update_container(pid, id, update_map)
+
+  @doc """
   List available Docker images on the server.
   """
   @spec list_images(pid) :: {:ok, list(String.t)} | {:error, String.t}
@@ -284,6 +293,11 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
+  def handle_call({:update_container, identifier, update_map}, _from, state) do
+    {:ok, body} = update_map |> Poison.encode
+    result = post("/containers/#{identifier}/update", state, body) |> handle_docker_json_response
+    {:reply, result, state}
+  end
 
   def handle_call({:stream_logs, identifier, number, target_pid}, _from, state) do
     task = Task.async(fn -> start_receiving(identifier, target_pid) end)
@@ -350,6 +364,7 @@ defmodule Dockex.Client do
   defp request(_, _, %{config: %{base_url: nil}}, _, _), do: {:error, "Dockex is not configured"}
   defp request(method, path, state, body, options) do
     url     = state.config.base_url <> path
+
     headers = [{"Content-Type", "application/json"}]
     options = options
     |> Keyword.merge([

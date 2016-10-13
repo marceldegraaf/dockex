@@ -168,6 +168,14 @@ defmodule Dockex.Client.Test do
     end
   end
 
+  test "update container: success", %{client: client} do
+    use_cassette "update_container_success" do
+      container = "a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455"
+      update_hash = %{"RestartPolicy" => %{ "MaximumRetryCount" => 4, "Name" => "on-failure" } }
+      {:ok, response} = Client.update_container(client, container, update_hash)
+    end
+  end
+
   test "list images: success", %{client: client} do
     use_cassette "list_images_success" do
       {:ok, response} = Client.list_images(client)

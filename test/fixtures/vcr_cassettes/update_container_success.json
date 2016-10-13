@@ -1,7 +1,7 @@
 [
   {
     "request": {
-      "body": "",
+      "body": "{\"RestartPolicy\":{\"Name\":\"on-failure\",\"MaximumRetryCount\":4}}",
       "headers": {
         "Content-Type": "application/json"
       },
@@ -13,10 +13,10 @@
         }
       },
       "request_body": "",
-      "url": "https://docker.example.dev:2376/containers/a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455/start"
+      "url": "https://docker.example.dev:2376/containers/a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455/update"
     },
     "response": {
-      "body": "{\"Id\":\"a493c62afbc1062bf24289848c8ddd3c171d56a6d46e246e33ab39c171a6f455\",\"Warnings\":null}\n",
+      "body": "{\"Warnings\":null}\n",
       "headers": {
         "Content-Length": "90",
         "Content-Type": "text/plain; charset=utf-8",
