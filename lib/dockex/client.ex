@@ -132,11 +132,13 @@ defmodule Dockex.Client do
   @doc """
   Delete a container.
   """
-  @spec delete_container(pid, String.t) :: {:ok, String.t} | {:error, String.t}
-  def delete_container(pid, identifier) when is_binary(identifier) do
-    GenServer.call(pid, {:delete_container, identifier})
+  @spec delete_container(pid, String.t, boolean) :: {:ok, String.t} | {:error, String.t}
+  def delete_container(pid, identifier, force) when is_binary(identifier) do
+    GenServer.call(pid, {:delete_container, identifier, force})
   end
-  def delete_container(pid, %Dockex.Container{id: id}), do: delete_container(pid, id)
+  def delete_container(pid, %Dockex.Container{id: id}, force), do: delete_container(pid, id, force)
+  def delete_container(pid, identifier) when is_binary(identifier), do: delete_container(pid, identifier, false)
+  def delete_container(pid, %Dockex.Container{id: id}), do: delete_container(pid, id, false)
 
   @doc """
   Commit a container. Returns {:ok, %{"Id": "596069db4bf5"}} when successfull.
@@ -283,8 +285,8 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call({:delete_container, identifier}, _from, state) do
-    result = delete("/containers/#{identifier}", state) |> handle_docker_response(identifier)
+  def handle_call({:delete_container, identifier, force}, _from, state) do
+    result = delete("/containers/#{identifier}", state, params: %{force: force}) |> handle_docker_response(identifier)
     {:reply, result, state}
   end
 
@@ -358,7 +360,6 @@ defmodule Dockex.Client do
   defp post(path, state, body), do: post(path, state, body, [])
   defp post(path, state, body, options), do: request(:post, path, state, body, options)
 
-  defp delete(path, state), do: delete(path, state, [])
   defp delete(path, state, options), do: request(:delete, path, state, "", options)
 
   defp request(_, _, %{config: %{base_url: nil}}, _, _), do: {:error, "Dockex is not configured"}
