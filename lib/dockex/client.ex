@@ -386,7 +386,8 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 201, body: body}} -> {:ok, body}
       {:ok, %HTTPoison.Response{status_code: 204, body: body}} -> {:ok, body}
       {:ok, %HTTPoison.Response{status_code: 304, body: body}} -> {:ok, body}
-      {:ok, %HTTPoison.Response{status_code: result_code, body: body}} -> {:error, result_code <> "" <> body}
+      {:ok, %HTTPoison.Response{status_code: 404, body: body}} -> {:error, body}
+      {:ok, %HTTPoison.Response{status_code: code, body: body}} -> {:error, "#{code}: #{body}"}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {_, reason} -> {:error, reason}
     end
