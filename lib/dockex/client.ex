@@ -111,7 +111,6 @@ defmodule Dockex.Client do
     end
   end
 
-
   @doc """
   Stop a running container.
   """
@@ -187,6 +186,15 @@ defmodule Dockex.Client do
   @spec pull_image(pid, String.t) :: {:ok, String.t} | {:error, String.t}
   def pull_image(pid, name) do
     GenServer.call(pid, {:pull_image, name})
+  end
+
+  @doc """
+  Execute a command inside a running Docker container.
+  This is a synchronous operation.
+  """
+  def exec(pid, %Dockex.Container{id: id}, command), do: exec(pid, id, command)
+  def exec(pid, identifier, command) do
+    GenServer.call(pid, {:exec, identifier, command})
   end
 
   #
@@ -336,6 +344,27 @@ defmodule Dockex.Client do
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:exec, identifier, command}, _from, state) do
+    # Prepare exec create params
+    {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => false, "Cmd" => [command]}
+    |> Poison.encode
+
+    # Create a new exec instance and get the ID of the exec
+    {:ok, %HTTPoison.Response{status_code: 201, body: body}} = post("/containers/#{identifier}/exec", state, json)
+    {:ok, response} = body |> Poison.decode
+    id = response["Id"]
+
+    # Prepare exec start params
+    {:ok, json} = %{"Detach" => true, "Tty" => false}
+    |> Poison.encode
+
+    # TODO Start the exec
+
+    result = {:ok, "ran #{command} in container #{identifier}"}
 
     {:reply, result, state}
   end
