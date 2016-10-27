@@ -44,8 +44,9 @@ defmodule Dockex.Client do
   @doc """
   List running containers.
   """
-  @spec list_containers(pid) :: {:ok, list(map)} | {:error, String.t}
-  def list_containers(pid), do: GenServer.call(pid, :list_containers)
+  @spec list_containers(pid, boolean) :: {:ok, list(map)} | {:error, String.t}
+  def list_containers(pid, all), do: GenServer.call(pid, {:list_containers, all})
+  def list_containers(pid), do: list_containers(pid, false)
 
   @doc """
   Inspect a container. Accepts an id, a name or a `%Dockex.Container{}` struct to specify
@@ -202,8 +203,8 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call(:list_containers, _from, state) do
-    result = get("/containers/json", state) |> handle_docker_json_response
+  def handle_call({:list_containers, all}, _from, state) do
+    result = get("/containers/json", state, params: %{all: all}) |> handle_docker_json_response
     {:reply, result, state}
   end
 
