@@ -312,13 +312,13 @@ defmodule Dockex.Client do
 
   def handle_call({:stream_logs, identifier, number, target_pid}, _from, state) do
     task = Task.async(fn -> start_receiving(identifier, target_pid) end)
-    request = request(:get, "/containers/#{identifier}/logs", state, "", [
+    result = request(:get, "/containers/#{identifier}/logs", state, "", [
       {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}
     ])
 
     # TODO: monitor task
 
-    {:reply, request, state}
+    {:reply, result, state}
   end
 
   # TODO: add support for streaming output. The Docker API streams JSON messages
@@ -350,7 +350,7 @@ defmodule Dockex.Client do
 
   def handle_call({:exec, identifier, command}, _from, state) do
     # Prepare exec create params
-    {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => false, "Cmd" => [command]}
+    {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => true, "Cmd" => [command]}
     |> Poison.encode
 
     # Create a new exec instance and get the ID of the exec
@@ -359,19 +359,42 @@ defmodule Dockex.Client do
     id = response["Id"]
 
     # Prepare exec start params
-    {:ok, json} = %{"Detach" => true, "Tty" => false}
+    {:ok, json} = %{"Detach" => false, "Tty" => false}
     |> Poison.encode
 
-    # TODO Start the exec
+    task = Task.async(fn -> receive_exec_stream() end)
 
-    result = {:ok, "ran #{command} in container #{identifier}"}
+    # Start the exec
+    case request(:post, "/exec/#{id}/start", state, json, [{:stream_to, task.pid}]) do
+       response -> IO.puts("#{inspect response}")
+    end
+
+    # Inspect the exec
+    result = case get("/exec/#{id}/json", state) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
+    end
 
     {:reply, result, state}
   end
 
+  def receive_exec_stream do
+    receive do
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+        IO.puts("EXEC RECEIVE: #{chunk}")
+        receive_exec_stream
+
+      %HTTPoison.AsyncEnd{} ->
+        IO.puts("EXEC RECEIVE: stream ended")
+
+      :close ->
+        IO.puts("EXEC RECEIVE: stream closed")
+    end
+  end
+
   def start_receiving(identifier, target_pid) do
     receive do
-
       %HTTPoison.AsyncChunk{chunk: new_data} ->
         send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: new_data, topic: identifier}
         start_receiving(identifier, target_pid)
