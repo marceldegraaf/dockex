@@ -383,8 +383,10 @@ defmodule Dockex.Client do
     receive do
       %HTTPoison.AsyncChunk{chunk: chunk} ->
         payload = case decode_stream(chunk, []) do
-          {[], rest} -> {nil, rest}
-          result -> result
+          {[], rest} -> rest
+          {[stdin: line], _rest} -> line
+          {[stdout: line], _rest} -> line
+          {[sterr: line], _rest} -> line
         end
 
         send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: payload, topic: identifier}
@@ -414,7 +416,7 @@ defmodule Dockex.Client do
 
       decode_stream(rest0, acc)
     else
-      {Enum.reverse(acc), packet}
+     { Enum.reverse(acc), packet }
     end
   end
   def decode_stream(packet, acc) when byte_size(packet) < 8 do
