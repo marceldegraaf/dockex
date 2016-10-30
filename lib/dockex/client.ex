@@ -192,9 +192,9 @@ defmodule Dockex.Client do
   Execute a command inside a running Docker container.
   This is a synchronous operation.
   """
-  def exec(pid, %Dockex.Container{id: id}, command), do: exec(pid, id, command)
-  def exec(pid, identifier, command) do
-    GenServer.call(pid, {:exec, identifier, command})
+  def exec(pid, %Dockex.Container{id: id}, command, target_pid), do: exec(pid, id, command, target_pid)
+  def exec(pid, identifier, command, target_pid) do
+    GenServer.call(pid, {:exec, identifier, command, target_pid})
   end
 
   #
@@ -348,7 +348,7 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call({:exec, identifier, command}, _from, state) do
+  def handle_call({:exec, identifier, command, target_pid}, _from, state) do
     # Prepare exec create params
     {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => true, "Cmd" => [command]}
     |> Poison.encode
@@ -362,7 +362,7 @@ defmodule Dockex.Client do
     {:ok, json} = %{"Detach" => false, "Tty" => false}
     |> Poison.encode
 
-    task = Task.async(fn -> receive_exec_stream() end)
+    task = Task.async(fn -> receive_exec_stream(identifier, target_pid) end)
 
     # Start the exec
     case request(:post, "/exec/#{id}/start", state, json, [{:stream_to, task.pid}]) do
@@ -379,19 +379,48 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def receive_exec_stream do
+  def receive_exec_stream(identifier, target_pid) do
     receive do
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        IO.puts("EXEC RECEIVE: #{chunk}")
-        receive_exec_stream
+        payload = case decode_stream(chunk, []) do
+          {[], rest} -> {nil, rest}
+          result -> result
+        end
+
+        send target_pid, %Dockex.Client.AsyncReply{event: "receive_data", payload: payload, topic: identifier}
+
+        receive_exec_stream(identifier, target_pid)
 
       %HTTPoison.AsyncEnd{} ->
-        IO.puts("EXEC RECEIVE: stream ended")
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
 
       :close ->
-        IO.puts("EXEC RECEIVE: stream closed")
+        send target_pid, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
     end
   end
+
+  def decode_stream(<<type, 0 ,0, 0, size :: integer-big-size(32), rest :: binary>> = packet, acc) do
+    if size <= byte_size(rest) do
+      <<data :: binary-size(size), rest0 :: binary>> = rest
+
+      type = case type do
+        0 -> :stdin
+        1 -> :stdout
+        2 -> :stderr
+        other -> other
+      end
+
+      acc = [ { type, data } | acc ]
+
+      decode_stream(rest0, acc)
+    else
+      {Enum.reverse(acc), packet}
+    end
+  end
+  def decode_stream(packet, acc) when byte_size(packet) < 8 do
+    { Enum.reverse(acc), packet }
+  end
+  def decode_stream(_packet, _acc), do: raise ArgumentError
 
   def start_receiving(identifier, target_pid) do
     receive do
