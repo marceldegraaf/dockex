@@ -193,7 +193,7 @@ defmodule Dockex.Client do
   This is a synchronous operation.
   """
   def exec(pid, %Dockex.Container{id: id}, command, target_pid) when is_binary(command), do: exec(pid, id, command, target_pid)
-  def exec(pid, identifier, command, target_pid) when is_binary(command), do: exec(pid, identifier, String.splt(command, " "), target_pid)
+  def exec(pid, identifier, command, target_pid) when is_binary(command), do: exec(pid, identifier, String.split(command, " "), target_pid)
   def exec(pid, identifier, command, target_pid) when is_list(command) do
     GenServer.call(pid, {:exec, identifier, command, target_pid})
   end
