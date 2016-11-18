@@ -192,8 +192,9 @@ defmodule Dockex.Client do
   Execute a command inside a running Docker container.
   This is a synchronous operation.
   """
-  def exec(pid, %Dockex.Container{id: id}, command, target_pid), do: exec(pid, id, command, target_pid)
-  def exec(pid, identifier, command, target_pid) do
+  def exec(pid, %Dockex.Container{id: id}, command, target_pid) when is_binary(command), do: exec(pid, id, command, target_pid)
+  def exec(pid, identifier, command, target_pid) when is_binary(command), do: exec(pid, identifier, String.splt(command, " "), target_pid)
+  def exec(pid, identifier, command, target_pid) when is_list(command) do
     GenServer.call(pid, {:exec, identifier, command, target_pid})
   end
 
@@ -348,9 +349,9 @@ defmodule Dockex.Client do
     {:reply, result, state}
   end
 
-  def handle_call({:exec, identifier, command, target_pid}, _from, state) do
+  def handle_call({:exec, identifier, command, target_pid}, _from, state) when is_list(command) do
     # Prepare exec create params
-    {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => true, "Cmd" => [command]}
+    {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => true, "Cmd" => command}
     |> Poison.encode
 
     # Create a new exec instance and get the ID of the exec
