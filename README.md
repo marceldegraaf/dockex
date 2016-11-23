@@ -17,17 +17,13 @@ configuration:
       ssl_key:         "/path/to/docker/key.pem",
     }
 
-Start the client:
-
-    {:ok, pid} = Dockex.Client.start_link(config)
-
 And use it:
 
     # Ping the Docker server
-    {:ok, ""} = Dockex.Client.ping(pid)
+    {:ok, ""} = Dockex.Client.ping(config)
 
     # List all running containers
-    {:ok, [...]} = Dockex.Client.list_containers(pid)
+    {:ok, [...]} = Dockex.Client.list_containers(config)
 
     # Initialize a container struct
     container = %Dockex.Container{
@@ -37,13 +33,13 @@ And use it:
     }
 
     # Create and start a new container
-    {:ok, container} = Dockex.Client.create_and_start_container(pid, container)
+    {:ok, container} = Dockex.Client.create_and_start_container(config, container)
 
     # Fetch logs for a container
-    {:ok, output} = Dockex.Client.get_container_logs(pid, container)
+    {:ok, output} = Dockex.Client.get_container_logs(config, container)
 
     # Stop a container
-    {:ok, container} = Dockex.Client.stop_container(pid, container)
+    {:ok, container} = Dockex.Client.stop_container(config, container)
 
     # Delete a container
-    {:ok, ""} = Dockex.Client.delete_container(pid, container)
+    {:ok, ""} = Dockex.Client.delete_container(config, container)
