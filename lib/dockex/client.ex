@@ -74,7 +74,7 @@ defmodule Dockex.Client do
 
   def stream_logs(config, identifier, number, target_pid) do
     task = Task.async(fn -> start_receiving(identifier, target_pid) end)
-    request(:get, "/containers/#{identifier}/logs", "", [
+    request(config, :get, "/containers/#{identifier}/logs", "", [
         {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}
     ])
 
