@@ -72,10 +72,10 @@ defmodule Dockex.Client do
   end
   def get_container_logs(config, %Dockex.Container{id: id}), do: get_container_logs(config, id, 50)
 
-  def stream_logs(config, identifier, number, target_config) do
-    task = Task.async(fn -> start_receiving(identifier, target_config) end)
+  def stream_logs(config, identifier, number, target_pid) do
+    task = Task.async(fn -> start_receiving(identifier, target_pid) end)
     request(:get, "/containers/#{identifier}/logs", "", [
-        {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.config}
+        {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}
     ])
 
     task
@@ -235,13 +235,13 @@ defmodule Dockex.Client do
   Execute a command inside a running Docker container.
   This is a synchronous operation.
   """
-  def exec(config, %Dockex.Container{id: id}, command, target_config) when is_binary(command), do: exec(config, id, command, target_config)
-  def exec(config, identifier, command, target_config) when is_binary(command), do: exec(config, identifier, String.split(command, " "), target_config)
+  def exec(config, %Dockex.Container{id: id}, command, target_pid) when is_binary(command), do: exec(config, id, command, target_pid)
+  def exec(config, identifier, command, target_pid) when is_binary(command), do: exec(config, identifier, String.split(command, " "), target_pid)
 
-  def exec(config, identifier, command, target_config) when is_list(command) do
+  def exec(config, identifier, command, target_pid) when is_list(command) do
     # Prepare exec create params
     {:ok, json} = %{"AttachStdin" => false, "AttachStdout" => true, "AttachStderr" => true, "Tty" => true, "Cmd" => command}
-    |> Poison.encode
+      |> Poison.encode
 
     # Create a new exec instance and get the ID of the exec
     {:ok, %HTTPoison.Response{status_code: 201, body: body}} = post(config, "/containers/#{identifier}/exec", json)
@@ -250,12 +250,12 @@ defmodule Dockex.Client do
 
     # Prepare exec start params
     {:ok, json} = %{"Detach" => false, "Tty" => false}
-    |> Poison.encode
+      |> Poison.encode
 
-    task = Task.async(fn -> receive_exec_stream(identifier, target_config) end)
+    task = Task.async(fn -> receive_exec_stream(identifier, target_pid) end)
 
     # Start the exec
-    case request(config, :post, "/exec/#{id}/start", json, [{:stream_to, task.config}]) do
+    case request(config, :post, "/exec/#{id}/start", json, [{:stream_to, task.pid}]) do
        response -> IO.puts("#{inspect response}")
     end
 
@@ -267,7 +267,7 @@ defmodule Dockex.Client do
     end
   end
 
-  def receive_exec_stream(identifier, target_config) do
+  def receive_exec_stream(identifier, target_pid) do
     receive do
       %HTTPoison.AsyncChunk{chunk: chunk} ->
         payload = case decode_stream(chunk, []) do
@@ -277,15 +277,15 @@ defmodule Dockex.Client do
           {[sterr: line], _rest} -> line
         end
 
-        send target_config, %Dockex.Client.AsyncReply{event: "receive_data", payload: payload, topic: identifier}
+        send target_pid, %Dockex.Client.AsyncReply{event: "exec_stream_data", payload: payload, topic: identifier}
 
-        receive_exec_stream(identifier, target_config)
+        receive_exec_stream(identifier, target_pid)
 
       %HTTPoison.AsyncEnd{} ->
-        send target_config, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
+        send target_pid, %Dockex.Client.AsyncEnd{event: "exec_stream_end", topic: identifier}
 
       :close ->
-        send target_config, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
+        send target_pid, %Dockex.Client.AsyncEnd{event: "exec_stream_end", topic: identifier}
     end
   end
 
@@ -312,17 +312,17 @@ defmodule Dockex.Client do
   end
   def decode_stream(_packet, _acc), do: raise ArgumentError
 
-  def start_receiving(identifier, target_config) do
+  def start_receiving(identifier, target_pid) do
     receive do
       %HTTPoison.AsyncChunk{chunk: new_data} ->
-        send target_config, %Dockex.Client.AsyncReply{event: "receive_data", payload: new_data, topic: identifier}
-        start_receiving(identifier, target_config)
+        send target_pid, %Dockex.Client.AsyncReply{event: "log_stream_data", payload: new_data, topic: identifier}
+        start_receiving(identifier, target_pid)
 
       %HTTPoison.AsyncEnd{} ->
-        send target_config, %Dockex.Client.AsyncEnd{event: "stream_end", topic: identifier}
+        send target_pid, %Dockex.Client.AsyncEnd{event: "log_stream_end", topic: identifier}
 
       :close ->
-        send target_config, %Dockex.Client.AsyncEnd{event: "stream_closed", topic: identifier}
+        send target_pid, %Dockex.Client.AsyncEnd{event: "log_stream_end", topic: identifier}
     end
   end
 
