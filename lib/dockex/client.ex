@@ -232,6 +232,20 @@ defmodule Dockex.Client do
   end
 
   @doc """
+  Pull a Docker image from a secured repo. Please provide the string that has to be Base64 encoded
+  """
+  @spec pull_image(%Dockex.Client.Config{}, String.t, String.t) :: {:ok, String.t} | {:error, String.t}
+  def pull_image(config, name, auth_config) do
+     headers = [{"Content-Type", "application/json"}, {"X-Registry-Auth", Base.encode64(auth_config)}]
+
+    case post(config, "/images/create", "", headers, params: %{fromImage: name}) do
+      {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, "Pulled image #{name}"}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
   Execute a command inside a running Docker container.
   This is a synchronous operation.
   """
@@ -331,14 +345,16 @@ defmodule Dockex.Client do
 
   defp post(config, path, body), do: post(config, path, body, [])
   defp post(config, path, body, options), do: request(config, :post, path, body, options)
+  defp post(config, path, body, headers, options), do: request(config, :post, path, body, headers, options)
 
   defp delete(config, path, options), do: request(config, :delete, path, "", options)
 
   defp request(%{base_url: nil}, _ , _, _), do: {:error, "Config is not configured"}
-  defp request(config, method, path, body, options) do
+  defp request(config, method, path, body, options), do: request(config, method, path, body, [{"Content-Type", "application/json"}], options)
+
+  defp request(config, method, path, body, headers, options) do
     url     = config.base_url <> path
 
-    headers = [{"Content-Type", "application/json"}]
     options = options
     |> Keyword.merge([
       hackney: [
