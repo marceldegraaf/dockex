@@ -288,7 +288,7 @@ defmodule Dockex.Client do
           {[], rest} -> rest
           {[stdin: line], _rest} -> line
           {[stdout: line], _rest} -> line
-          {[sterr: line], _rest} -> line
+          {[stderr: line], _rest} -> line
         end
 
         send target_pid, %Dockex.Client.AsyncReply{event: "exec_stream_data", payload: payload, topic: identifier}
@@ -328,8 +328,15 @@ defmodule Dockex.Client do
 
   def start_receiving(identifier, target_pid) do
     receive do
-      %HTTPoison.AsyncChunk{chunk: new_data} ->
-        send target_pid, %Dockex.Client.AsyncReply{event: "log_stream_data", payload: new_data, topic: identifier}
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+         payload = case decode_stream(chunk, []) do
+              {[], rest} -> rest
+              {[stdin: line], _rest} -> line
+              {[stdout: line], _rest} -> line
+              {[stderr: line], _rest} -> line
+            end
+
+        send target_pid, %Dockex.Client.AsyncReply{event: "log_stream_data", payload: payload, topic: identifier}
         start_receiving(identifier, target_pid)
 
       %HTTPoison.AsyncEnd{} ->
