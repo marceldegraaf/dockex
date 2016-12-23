@@ -73,7 +73,7 @@ defmodule Dockex.Client do
   def get_container_logs(config, %Dockex.Container{id: id}), do: get_container_logs(config, id, 50)
 
   def stream_logs(config, identifier, number, target_pid) do
-    task = Task.async(fn -> start_receiving(identifier, target_pid) end)
+    task = Dockex.Decoder.TtyStream.start(identifier, target_pid, "log")
     request(config, :get, "/containers/#{identifier}/logs", "", [
         {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}
     ])
@@ -235,10 +235,16 @@ defmodule Dockex.Client do
   Pull a Docker image from a secured repo. Please provide the string that has to be Base64 encoded
   """
   @spec pull_image(%Dockex.Client.Config{}, String.t, String.t) :: {:ok, String.t} | {:error, String.t}
-  def pull_image(config, name, auth_config) do
-     headers = [{"Content-Type", "application/json"}, {"X-Registry-Auth", Base.encode64(auth_config)}]
+  def pull_image(config, name, auth_config, target_pid \\ nil) do
+    headers = [{"Content-Type", "application/json"}, {"X-Registry-Auth", Base.encode64(auth_config)}]
 
-    case post(config, "/images/create", "", headers, params: %{fromImage: name}) do
+    {:ok, task_pid} = Dockex.Decoder.JsonStream.start(target_pid, "pull_image")
+
+    # Prepare exec start params
+    {:ok, json} = %{fromImage: name}
+      |> Poison.encode
+
+    case request(config, :post, "/images/create", json, [{:stream_to, task_pid}]) do
       {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, "Pulled image #{name}"}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
@@ -266,10 +272,10 @@ defmodule Dockex.Client do
     {:ok, json} = %{"Detach" => false, "Tty" => false}
       |> Poison.encode
 
-    task = Task.async(fn -> receive_exec_stream(identifier, target_pid) end)
+    {:ok, task_pid} = Dockex.Decoder.TtyStream.start(identifier, target_pid, "exec")
 
     # Start the exec
-    case request(config, :post, "/exec/#{id}/start", json, [{:stream_to, task.pid}]) do
+    case request(config, :post, "/exec/#{id}/start", json, [{:stream_to, task_pid}]) do
        response -> IO.puts("#{inspect response}")
     end
 
@@ -278,72 +284,6 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
-    end
-  end
-
-  def receive_exec_stream(identifier, target_pid) do
-    receive do
-      %HTTPoison.AsyncChunk{chunk: chunk} ->
-        payload = case decode_stream(chunk, []) do
-          {[], rest} -> rest
-          {[stdin: line], _rest} -> line
-          {[stdout: line], _rest} -> line
-          {[stderr: line], _rest} -> line
-        end
-
-        send target_pid, %Dockex.Client.AsyncReply{event: "exec_stream_data", payload: payload, topic: identifier}
-
-        receive_exec_stream(identifier, target_pid)
-
-      %HTTPoison.AsyncEnd{} ->
-        send target_pid, %Dockex.Client.AsyncEnd{event: "exec_stream_end", topic: identifier}
-
-      :close ->
-        send target_pid, %Dockex.Client.AsyncEnd{event: "exec_stream_end", topic: identifier}
-    end
-  end
-
-  def decode_stream(<<type, 0 ,0, 0, size :: integer-big-size(32), rest :: binary>> = packet, acc) do
-    if size <= byte_size(rest) do
-      <<data :: binary-size(size), rest0 :: binary>> = rest
-
-      type = case type do
-        0 -> :stdin
-        1 -> :stdout
-        2 -> :stderr
-        other -> other
-      end
-
-      acc = [ { type, data } | acc ]
-
-      decode_stream(rest0, acc)
-    else
-     { Enum.reverse(acc), packet }
-    end
-  end
-  def decode_stream(packet, acc) when byte_size(packet) < 8 do
-    { Enum.reverse(acc), packet }
-  end
-  def decode_stream(_packet, _acc), do: raise ArgumentError
-
-  def start_receiving(identifier, target_pid) do
-    receive do
-      %HTTPoison.AsyncChunk{chunk: chunk} ->
-         payload = case decode_stream(chunk, []) do
-              {[], rest} -> rest
-              {[stdin: line], _rest} -> line
-              {[stdout: line], _rest} -> line
-              {[stderr: line], _rest} -> line
-            end
-
-        send target_pid, %Dockex.Client.AsyncReply{event: "log_stream_data", payload: payload, topic: identifier}
-        start_receiving(identifier, target_pid)
-
-      %HTTPoison.AsyncEnd{} ->
-        send target_pid, %Dockex.Client.AsyncEnd{event: "log_stream_end", topic: identifier}
-
-      :close ->
-        send target_pid, %Dockex.Client.AsyncEnd{event: "log_stream_end", topic: identifier}
     end
   end
 
