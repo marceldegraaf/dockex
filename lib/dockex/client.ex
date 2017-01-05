@@ -221,8 +221,7 @@ defmodule Dockex.Client do
 
   def pull_image(config, name) do
     task = Task.async(fn -> await_stream end)
-
-
+    pull_image(config, name, %{}, task)
     task.await
   end
 
