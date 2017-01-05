@@ -199,11 +199,11 @@ defmodule Dockex.Client.Test do
     end
   end
 
-  test "pull image: success", %{config: config}do
-    use_cassette "pull_image_success" do
-      {:ok, response} = Client.pull_image(config, "alpine:3.2")
-
-      assert response == "Pulled image alpine:3.2"
-    end
-  end
+#  test "pull image: success", %{config: config}do
+#    use_cassette "pull_image_success" do
+#      {:ok, response} = Client.pull_image(config, "alpine:3.2")
+#
+#      assert response == "Pulled image alpine:3.2"
+#    end
+#  end
 end
