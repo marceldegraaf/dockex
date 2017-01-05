@@ -73,9 +73,9 @@ defmodule Dockex.Client do
   def get_container_logs(config, %Dockex.Container{id: id}), do: get_container_logs(config, id, 50)
 
   def stream_logs(config, identifier, number, target_pid) do
-    task = Task.async(fn -> start_receiving(identifier, target_pid) end)
+    {:ok, task} = Task.start(fn -> start_receiving(identifier, target_pid) end)
     request(config, :get, "/containers/#{identifier}/logs", "", [
-        {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task.pid}
+        {:params, %{stdout: 1, stderr: 1, follow: 1, details: 0, timestamps: 0, tail: number}}, {:stream_to, task}
     ])
 
     task
@@ -219,35 +219,42 @@ defmodule Dockex.Client do
     images |> Enum.count > 0
   end
 
-  @doc """
-  Pull a Docker image.
-  """
-  @spec pull_image(%Dockex.Client.Config{}, String.t) :: {:ok, String.t} | {:error, String.t}
   def pull_image(config, name) do
-    case post(config, "/images/create", "", params: %{fromImage: name}) do
-      {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, "Pulled image #{name}"}
+    task = Task.async(fn -> await_stream end)
+
+
+    task.await
+  end
+
+
+  @doc """
+  Pull a Docker image. This is an asynchronous operation.
+  """
+  @spec pull_image(%Dockex.Client.Config{}, String.t, Enum.t, PID) :: {:ok, String.t} | {:error, String.t}
+  def pull_image(config, name, headers, target_pid) do
+    {:ok, task_pid} = Task.start(fn -> receive_json_stream("pull_image", target_pid) end)
+
+    case post(config, "/images/create", "", headers, [{:params, %{fromImage: name}}, {:stream_to, task_pid}]) do
+      {:ok, %HTTPoison.AsyncResponse{id: reference}} -> {:ok, "Pulling image stream"}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
   end
 
   @doc """
-  Pull a Docker image from a secured repo. Please provide the string that has to be Base64 encoded
+  Pull a Docker image from a secured repo. Please provide the string that has to be Base64 encoded.
+  This is an asynchronous operation.
   """
-  @spec pull_image(%Dockex.Client.Config{}, String.t, String.t) :: {:ok, String.t} | {:error, String.t}
-  def pull_image(config, name, auth_config) do
-     headers = [{"Content-Type", "application/json"}, {"X-Registry-Auth", Base.encode64(auth_config)}]
-
-    case post(config, "/images/create", "", headers, params: %{fromImage: name}) do
-      {:ok, %HTTPoison.Response{status_code: 200}} -> {:ok, "Pulled image #{name}"}
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
-      {:error, reason} -> {:error, reason}
-    end
+  @spec pull_image_with_auth(%Dockex.Client.Config{}, String.t, Map.t, String.t) :: {:ok, String.t} | {:error, String.t}
+  def pull_image_with_auth(config, name, auth_config, target_pid) do
+    headers = [{"Content-Type", "application/json"}, {"X-Registry-Auth", Base.encode64(auth_config)}]
+    pull_image(config, name, headers, target_pid)
   end
+
 
   @doc """
   Execute a command inside a running Docker container.
-  This is a synchronous operation.
+  This is an asynchronous operation.
   """
   def exec(config, %Dockex.Container{id: id}, command, target_pid) when is_binary(command), do: exec(config, id, command, target_pid)
   def exec(config, identifier, command, target_pid) when is_binary(command), do: exec(config, identifier, String.split(command, " "), target_pid)
@@ -266,10 +273,10 @@ defmodule Dockex.Client do
     {:ok, json} = %{"Detach" => false, "Tty" => false}
       |> Poison.encode
 
-    task = Task.async(fn -> receive_exec_stream(identifier, target_pid) end)
+    {:ok, task} = Task.start(fn -> receive_exec_stream(identifier, target_pid) end)
 
     # Start the exec
-    case request(config, :post, "/exec/#{id}/start", json, [{:stream_to, task.pid}]) do
+    case request(config, :post, "/exec/#{id}/start", json, [{:stream_to, task}]) do
        response -> IO.puts("#{inspect response}")
     end
 
@@ -278,6 +285,28 @@ defmodule Dockex.Client do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> Poison.decode(body)
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def await_stream do
+    receive do
+      %Dockex.Client.AsyncReply{} ->
+        await_stream
+
+      %Dockex.Client.AsyncEnd{} ->
+    end
+  end
+
+  def receive_json_stream(name, target_pid) do
+    receive do
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+        json  = Poison.decode!(chunk)
+        send target_pid, %Dockex.Client.AsyncReply{event: "#{name}_stream_data", payload: json}
+
+        receive_json_stream(name, target_pid)
+
+      %HTTPoison.AsyncEnd{} ->
+        send target_pid, %Dockex.Client.AsyncEnd{event: "#{name}_stream_end"}
     end
   end
 
